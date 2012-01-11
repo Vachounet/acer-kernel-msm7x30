@@ -270,7 +270,8 @@ static int acer_hs_probe(struct platform_device *pdev)
 	hr->debounce_time = ktime_set(0, 500000000);  /* 500 ms */
 
 	INIT_WORK(&short_wq, acer_update_state_work);
-	hr->sdev.name = "acer-hs";
+	// hr->sdev.name = "acer-hs";
+	hr->sdev.name = "h2w"; // For AOSP
 	hr->sdev.print_name = acer_hs_print_name;
 	hr->sdev.print_state = acer_hs_print_state;
 	hr->headsetOn = false;
