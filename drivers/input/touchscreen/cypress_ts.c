@@ -664,3 +664,4 @@ MODULE_AUTHOR("Peng Chang <Peng_Chang@acer.com.tw>");
 MODULE_DESCRIPTION("CYPRESS driver");
 MODULE_LICENSE("GPL v2");
 
+

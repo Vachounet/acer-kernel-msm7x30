@@ -46,10 +46,6 @@
 	 (RBBM_INT_CNTL__RDERR_INT_MASK |  \
 	  RBBM_INT_CNTL__DISPLAY_UPDATE_INT_MASK)
 
-#define GSL_SQ_INT_MASK \
-	(SQ_INT_CNTL__PS_WATCHDOG_MASK | \
-	 SQ_INT_CNTL__VS_WATCHDOG_MASK)
-
 /* Yamato MH arbiter config*/
 #define KGSL_CFG_YAMATO_MHARB \
 	(0x10 \
@@ -206,25 +202,6 @@ static void kgsl_yamato_rbbm_intrcallback(struct kgsl_device *device)
 	kgsl_yamato_regwrite_isr(device, REG_RBBM_INT_ACK, status);
 }
 
-static void kgsl_yamato_sq_intrcallback(struct kgsl_device *device)
-{
-	unsigned int status = 0;
-
-	kgsl_yamato_regread_isr(device, REG_SQ_INT_STATUS, &status);
-
-	if (status & SQ_INT_CNTL__PS_WATCHDOG_MASK)
-		KGSL_DRV_INFO(device, "sq ps watchdog interrupt\n");
-	else if (status & SQ_INT_CNTL__VS_WATCHDOG_MASK)
-		KGSL_DRV_INFO(device, "sq vs watchdog interrupt\n");
-	else
-		KGSL_DRV_WARN(device,
-			"bad bits in REG_SQ_INT_STATUS %08x\n", status);
-
-
-	status &= GSL_SQ_INT_MASK;
-	kgsl_yamato_regwrite_isr(device, REG_SQ_INT_ACK, status);
-}
-
 irqreturn_t kgsl_yamato_isr(int irq, void *data)
 {
 	irqreturn_t result = IRQ_NONE;
@@ -251,11 +228,6 @@ irqreturn_t kgsl_yamato_isr(int irq, void *data)
 
 	if (status & MASTER_INT_SIGNAL__RBBM_INT_STAT) {
 		kgsl_yamato_rbbm_intrcallback(device);
-		result = IRQ_HANDLED;
-	}
-
-	if (status & MASTER_INT_SIGNAL__SQ_INT_STAT) {
-		kgsl_yamato_sq_intrcallback(device);
 		result = IRQ_HANDLED;
 	}
 
@@ -616,9 +588,6 @@ static int kgsl_yamato_start(struct kgsl_device *device, unsigned int init_ram)
 
 	kgsl_yamato_regwrite(device, REG_RBBM_INT_CNTL, GSL_RBBM_INT_MASK);
 
-	/* make sure SQ interrupts are disabled */
-	kgsl_yamato_regwrite(device, REG_SQ_INT_CNTL, 0);
-
 	if (device->chip_id == KGSL_CHIPID_LEIA_REV470)
 		yamato_device->gmemspace.sizebytes = SZ_512K;
 	else
@@ -658,8 +627,6 @@ static int kgsl_yamato_stop(struct kgsl_device *device)
 	struct kgsl_yamato_device *yamato_device = KGSL_YAMATO_DEVICE(device);
 	del_timer(&device->idle_timer);
 	kgsl_yamato_regwrite(device, REG_RBBM_INT_CNTL, 0);
-
-	kgsl_yamato_regwrite(device, REG_SQ_INT_CNTL, 0);
 
 	yamato_device->drawctxt_active = NULL;
 
@@ -722,7 +689,7 @@ kgsl_yamato_recover_hang(struct kgsl_device *device)
 				KGSL_DEVICE_MEMSTORE_OFFSET(soptimestamp));
 	kgsl_sharedmem_readl(&device->memstore, &eoptimestamp,
 				KGSL_DEVICE_MEMSTORE_OFFSET(eoptimestamp));
-	rmb();
+	mb();
 	KGSL_CTXT_ERR(device,
 		"Context that caused a GPU hang: %x\n", bad_context);
 	/* restart device */

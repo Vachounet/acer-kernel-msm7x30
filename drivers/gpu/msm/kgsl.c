@@ -846,24 +846,6 @@ static long kgsl_ioctl_device_getproperty(struct kgsl_device_private *dev_priv,
 	return result;
 }
 
-static long kgsl_ioctl_device_regread(struct kgsl_device_private *dev_priv,
-				      unsigned int cmd, void *data)
-{
-	struct kgsl_device_regread *param = data;
-
-	if (param->offsetwords*sizeof(uint32_t) >=
-	    dev_priv->device->regspace.sizebytes) {
-		KGSL_DRV_ERR(dev_priv->device, "invalid offset %d\n",
-			     param->offsetwords);
-		return -ERANGE;
-	}
-
-	kgsl_regread(dev_priv->device, param->offsetwords, &param->value);
-
-	return 0;
-}
-
-
 static long kgsl_ioctl_device_waittimestamp(struct kgsl_device_private
 						*dev_priv, unsigned int cmd,
 						void *data)
@@ -1615,8 +1597,6 @@ static const struct {
 } kgsl_ioctl_funcs[] = {
 	KGSL_IOCTL_FUNC(IOCTL_KGSL_DEVICE_GETPROPERTY,
 			kgsl_ioctl_device_getproperty, 1),
-	KGSL_IOCTL_FUNC(IOCTL_KGSL_DEVICE_REGREAD,
-			kgsl_ioctl_device_regread, 1),
 	KGSL_IOCTL_FUNC(IOCTL_KGSL_DEVICE_WAITTIMESTAMP,
 			kgsl_ioctl_device_waittimestamp, 1),
 	KGSL_IOCTL_FUNC(IOCTL_KGSL_RINGBUFFER_ISSUEIBCMDS,
@@ -1798,7 +1778,6 @@ void kgsl_unregister_device(struct kgsl_device *device)
 	kgsl_driver.devp[minor] = NULL;
 	mutex_unlock(&kgsl_driver.devlock);
 
-	atomic_dec(&kgsl_driver.device_count);
 }
 
 int
@@ -1838,9 +1817,6 @@ kgsl_register_device(struct kgsl_device *device)
 	}
 
 	dev_set_drvdata(&device->pdev->dev, device);
-
-	/* Generic device initialization */
-	atomic_inc(&kgsl_driver.device_count);
 
 	/* sysfs and debugfs initalization - failure here is non fatal */
 
@@ -2098,9 +2074,6 @@ static int __init kgsl_core_init(void)
 
 	kgsl_sharedmem_init_sysfs();
 	kgsl_cffdump_init();
-
-	/* Generic device initialization */
-	atomic_set(&kgsl_driver.device_count, -1);
 
 	INIT_LIST_HEAD(&kgsl_driver.process_list);
 

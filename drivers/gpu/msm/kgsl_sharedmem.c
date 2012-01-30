@@ -482,7 +482,7 @@ kgsl_sharedmem_readl(const struct kgsl_memdesc *memdesc,
 	if (offsetbytes + sizeof(unsigned int) > memdesc->size)
 		return -ERANGE;
 
-	*dst = readl(memdesc->hostptr + offsetbytes);
+	*dst = readl_relaxed(memdesc->hostptr + offsetbytes);
 	return 0;
 }
 
@@ -519,7 +519,7 @@ kgsl_sharedmem_writel(const struct kgsl_memdesc *memdesc,
 
 	kgsl_cffdump_setmem(kgsl_get_physaddr(memdesc) + offsetbytes,
 		src, sizeof(uint));
-	writel(src, memdesc->hostptr + offsetbytes);
+	writel_relaxed(src, memdesc->hostptr + offsetbytes);
 	return 0;
 }
 
