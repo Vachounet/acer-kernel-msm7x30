@@ -526,7 +526,7 @@ int kgsl_ringbuffer_init(struct kgsl_device *device)
 	struct kgsl_ringbuffer *rb = &yamato_device->ringbuffer;
 
 	rb->device = device;
-	rb->sizedwords = KGSL_RB_SIZE >> 2
+	rb->sizedwords = KGSL_RB_SIZE >> 2;
 
 	/* allocate memory for ringbuffer */
 	status = kgsl_sharedmem_alloc_coherent(&rb->buffer_desc,
@@ -560,9 +560,9 @@ int kgsl_ringbuffer_close(struct kgsl_ringbuffer *rb)
 	
   kgsl_sharedmem_free(&rb->memptrs_desc);
 	
-  kfree(adreno_dev->pfp_fw);
+  kfree(yamato_device->pfp_fw);
 	
-  kfree(adreno_dev->pm4_fw);
+  kfree(yamato_device->pm4_fw);
 
 	yamato_device->pfp_fw = NULL;
 	yamato_device->pm4_fw = NULL;
@@ -683,7 +683,7 @@ kgsl_ringbuffer_issueibcmds(struct kgsl_device_private *dev_priv,
 
 	if (device->state & KGSL_STATE_HUNG)
 		return -EBUSY;
-    if (!(yamato_devce->ringbuffer.flags & KGSL_FLAGS_STARTED) ||
+    if (!(yamato_device->ringbuffer.flags & KGSL_FLAGS_STARTED) ||
         context == NULL || ibdesc == 0 || numibs == 0)
 		return -EINVAL;
 
